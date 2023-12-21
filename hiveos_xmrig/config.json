@@ -1,0 +1,67 @@
+{
+    "api": {
+        "id": null,
+        "worker-id": null
+    },
+    "http": {
+        "enabled": true,
+        "host": "127.0.0.1",
+        "port": 60070,
+        "access-token": null,
+        "restricted": true
+    },
+    "autosave": true,
+    "version": 1,
+    "background": false,
+    "colors": true,
+    "randomx": {
+        "init": -1,
+        "mode": "auto",
+        "numa": true,
+        "rdmsr": true,
+        "wrmsr": true,
+        "1gb-pages": true
+    },
+    "cpu": {
+        "enabled": true,
+        "huge-pages": true,
+        "hw-aes": null,
+        "priority": null,
+        "memory-pool": false,
+        "yield": true,
+        "max-threads-hint": 100,
+        "asm": true
+    },
+    "opencl": {
+        "enabled": false
+    },
+    "cuda": {
+        "enabled": false
+    },
+    "donate-level": 0,
+    "donate-over-proxy": 0,
+    "log-file": "/var/log/miner/xmrig-new/xmrig-new.log",
+    "pools": [
+        {
+            "algo": "rx/0",
+            "coin": "zephyr",
+            "url": "sg.zephyr.herominers.com:1123",
+            "user": "ZEPHYR3bP2hb6XLgXsSz1Qhm7HUjsJHMCjhAK6UfWqggGoJZMR1s81SGNiW5Z1yppABw6cZPCmUK4eRzZanaU13zhGF1kfh8BbS2T",
+            "pass": "x",
+            "rig-id": null,
+            "nicehash": false,
+            "keepalive": true,
+            "enabled": true,
+            "tls": false,
+            "tls-fingerprint": null,
+            "daemon": false,
+            "self-select": null
+        }
+    ],
+    "print-time": 60,
+    "retries": 5,
+    "retry-pause": 5,
+    "syslog": false,
+    "user-agent": null,
+    "watch": true
+}
