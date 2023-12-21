@@ -20,7 +20,7 @@
         "numa": true,
         "rdmsr": true,
         "wrmsr": true,
-        "1gb-pages": false
+        "1gb-pages": true
     },
     "cpu": {
         "enabled": true,
