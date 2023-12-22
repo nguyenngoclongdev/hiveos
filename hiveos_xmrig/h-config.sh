@@ -6,7 +6,8 @@ function miner_config_echo() {
 
 function miner_config_gen() {
 	local MINER_CONFIG="/hive/miners/custom/$MINER_NAME/config.json"
-	mkfile_from_symlink $MINER_CONFIG
+	touch $MINER_CONFIG
+	# mkfile_from_symlink $MINER_CONFIG
 
 	conf=`cat /hive/miners/custom/$MINER_NAME/config_global.json | envsubst`
 	userconf='{}'
