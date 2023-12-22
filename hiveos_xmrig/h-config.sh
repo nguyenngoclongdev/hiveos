@@ -1,115 +1,63 @@
 #!/usr/bin/env bash
 
-function miner_config_echo() {
-	miner_echo_config_file "/hive/miners/custom/$MINER_NAME/config.json"
-}
+conf=$(cat /hive/miners/custom/$MINER_NAME/config_global.json | envsubst)
 
-function miner_config_gen() {
-	local MINER_CONFIG="/hive/miners/custom/$MINER_NAME/config.json"
-	# mkfile_from_symlink $MINER_CONFIG
-
-	conf=`cat /hive/miners/custom/$MINER_NAME/config_global.json | envsubst`
-	userconf='{}'
-
-	#merge user config options into main config
-	if [[ ! -z $XMRIG_NEW_USER_CONFIG ]]; then
-		while read -r line; do
-			[[ -z $line ]] && continue
-			conf=$(jq -s '.[0] * .[1]' <<< "$conf {$line}")
-		done <<< "$XMRIG_NEW_USER_CONFIG"
-	fi
-
-	if [[ $XMRIG_NEW_CPU -eq 1 ]]; then
-		#merge CPU settings into main config
-		if [[ -z $XMRIG_NEW_CPU_CONFIG || $XMRIG_NEW_CPU_CONFIG == '[]' || $XMRIG_NEW_CPU_CONFIG == 'null' ]]; then
-			echo -e "${YELLOW}XMRIG_NEW_CPU_CONFIG is empty, useing autoconfig${NOCOLOR}"
-		else
-			local cpu="{$XMRIG_NEW_CPU_CONFIG}"
-			cpu=`jq --null-input --argjson cpu "$cpu" '$cpu'`
-			conf=$(jq -s '.[0] * .[1]' <<< "$conf $cpu")
-		fi
-	else
-		echo -e "${YELLOW}CPU is disabled${NOCOLOR}"
-		local cpu='{"cpu": {"enabled": false}}'
-		cpu=`jq --null-input --argjson cpu "$cpu" '$cpu'`
-		conf=$(jq -s '.[0] * .[1]' <<< "$conf $cpu")
-	fi
-
-	if [[ $XMRIG_NEW_OPENCL -eq 1 ]]; then
-		#merge GPU settings into main config
-		if [[ -z $XMRIG_NEW_OPENCL_CONFIG || $XMRIG_NEW_OPENCL_CONFIG == '[]' || $XMRIG_NEW_OPENCL_CONFIG == 'null' ]]; then
-			echo -e "${YELLOW}XMRIG_NEW_OPENCL_CONFIG is empty, useing autoconfig${NOCOLOR}"
-		else
-			local opencl="{$XMRIG_NEW_OPENCL_CONFIG}"
-			opencl=`jq --null-input --argjson opencl "$opencl" '$opencl'`
-			conf=$(jq -s '.[0] * .[1]' <<< "$conf $opencl")
-		fi
-	else
-		echo -e "${YELLOW}OPENCL is disabled${NOCOLOR}"
-		local opencl='{"opencl": {"enabled": false}}'
-		opencl=`jq --null-input --argjson opencl "$opencl" '$opencl'`
-		conf=$(jq -s '.[0] * .[1]' <<< "$conf $opencl")
-	fi
-
-	if [[ $XMRIG_NEW_CUDA -eq 1 ]]; then
-		#merge GPU settings into main config
-		if [[ -z $XMRIG_NEW_CUDA_CONFIG || $XMRIG_NEW_CUDA_CONFIG == '[]' || $XMRIG_NEW_CUDA_CONFIG == 'null' ]]; then
-			echo -e "${YELLOW}XMRIG_NEW_CUDA_CONFIG is empty, useing autoconfig${NOCOLOR}"
-			local cuda='{"cuda": {"loader": "'/hive/miners/custom/$MINER_NAME/libxmrig-cuda.so'"}}'
-			cuda=`jq --null-input --argjson cuda "$cuda" '$cuda'`
-			conf=$(jq -s '.[0] * .[1]' <<< "$conf $cuda")
-		else
-			local cuda="{$XMRIG_NEW_CUDA_CONFIG}"
-			cuda=`jq --null-input --argjson cuda "$cuda" '$cuda'`
-			conf=$(jq -s '.[0] * .[1]' <<< "$conf $cuda")
-			local cuda='{"cuda": {"loader": "'/hive/miners/custom/$MINER_NAME/libxmrig-cuda.so'"}}'
-			cuda=`jq --null-input --argjson cuda "$cuda" '$cuda'`
-			conf=$(jq -s '.[0] * .[1]' <<< "$conf $cuda")
-		fi
-	else
-		echo -e "${YELLOW}CUDA is disabled${NOCOLOR}"
-		local cuda='{"cuda": {"enabled": false}}'
-		cuda=`jq --null-input --argjson cuda "$cuda" '$cuda'`
-		conf=$(jq -s '.[0] * .[1]' <<< "$conf $cuda")
-	fi
-
-	#merge pools into main config
-	local pools='[]'
-	[[ $XMRIG_NEW_TLS -eq 1 ]] && local tls="true" || tls="false"
-	local tls_fp=$(jq -r '."tls-fingerprint"' <<< "$conf")
-	[[ -z $tls_fp ]] && tls_fp="null"
-	[[ ! $tls_fp == "null" && ! $tls_fp == "true" && ! $tls_fp == "false" ]] && tls_fp=\"$tls_fp\"
-	local nicehash=$(jq -r .nicehash <<< "$conf")
-	[[ -z $nicehash || $nicehash == "null" ]] && nicehash="false"
-	local self_select=$(jq -r '."self-select"' <<< "$conf")
-	[[ -z $self_select ]] && self_select="null"
-	[[ ! $self_select == "null" && ! $self_select == "true" && ! $self_select == "false" ]] && self_select=\"$self_select\"
-
-	[[ -z $XMRIG_NEW_ALGO ]] && XMRIG_NEW_ALGO="cn/r"
-
-	# local coin=`echo $META | jq -r .${MINER_NAME}.coin`
-	# [[ -z $coin ]] && coin="null"
-
-	for url in $XMRIG_NEW_URL; do
-		[[ ${nicehash,,} = "true" || ${url,,} = *"nicehash"* ]] && c_nicehash='true' || c_nicehash='false'
-		pool=$(cat <<EOF
-				{"algo": "$XMRIG_NEW_ALGO", "coin": null, "url": "$url", "user": "$XMRIG_NEW_TEMPLATE",
-				"pass": "$XMRIG_NEW_PASS", "rig-id": "$WORKER_NAME", "nicehash": $c_nicehash,
-				"keepalive": true, "enabled": true, "tls": $tls, "tls-fingerprint": $tls_fp, "daemon": false,
-				"self-select": $self_select}
+# enable miner http api to use it in h-stats.sh
+http=$(cat <<EOF
+	{
+		"http": {
+			"enabled": true,
+			"host": "127.0.0.1",
+			"port": $MINER_API_PORT,
+			"access-token": null,
+			"restricted": true
+		},
+		"log-file": "$CUSTOM_LOG_BASENAME.log"
+	}
 EOF
 )
-		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
-	done
 
+conf=$(jq -s '.[0] * .[1]' <<< "$conf $http")
 
-	if [[ -z $pools || $pools == '[]' || $pools == 'null' ]]; then
-		echo -e "${RED}No pools configured, using default${NOCOLOR}"
-	else
-		pools=`jq --null-input --argjson pools "$pools" '{"pools": $pools}'`
-		conf=$(jq -s '.[0] * .[1]' <<< "$conf $pools")
-	fi
+# merge user config options into main config
+if [[ ! -z $CUSTOM_USER_CONFIG ]]; then
+	while read -r line; do
+		[[ -z $line ]] && continue
+		conf=$(jq -s '.[0] * .[1]' <<< "$conf {$line}")
+	done <<< "$CUSTOM_USER_CONFIG"
+fi
 
+# merge pools into main config
+local pools='[]'
 
-	echo "$conf" | jq . > $MINER_CONFIG
-}
+for url in $CUSTOM_URL; do
+	pool=$(cat <<EOF
+		{
+			"algo": "$CUSTOM_ALGO",
+			"coin": null,
+			"url": "$url",
+			"user": "$CUSTOM_TEMPLATE",
+			"pass": "$CUSTOM_PASS",
+			"rig-id": "$WORKER_NAME",
+			"nicehash": false,
+			"keepalive": true,
+			"enabled": true,
+			"tls": false,
+			"tls-fingerprint": null,
+			"daemon": false,
+			"self-select": false
+		}
+EOF
+	)
+	pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
+done
+
+if [[ -z $pools || $pools == '[]' || $pools == 'null' ]]; then
+	echo -e "${RED}No pools configured, using default${NOCOLOR}"
+else
+	pools=`jq --null-input --argjson pools "$pools" '{"pools": $pools}'`
+	conf=$(jq -s '.[0] * .[1]' <<< "$conf $pools")
+fi
+
+mkfile_from_symlink $CUSTOM_CONFIG_FILENAME
+echo "$conf" | jq . > $CUSTOM_CONFIG_FILENAME
