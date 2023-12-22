@@ -20,6 +20,5 @@ function HugePagesTune(){
 [[ "$XMRIG_NEW_HUGEPAGES" == "" && "$MINER_VER" < "5.2.0" ]] && HugePagesTune
 
 # Miner run here
-# cd $MINER_DIR/$MINER_FORK/$MINER_VER
-
+cd /hive/miners/custom/$MINER_NAME/
 ./xmrig

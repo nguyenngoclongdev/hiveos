@@ -1,35 +1,16 @@
 #!/usr/bin/env bash
 
-function miner_fork() {
-	local MINER_FORK=$XMRIG_NEW_FORK
-	[[ -z $MINER_FORK ]] && MINER_FORK=$MINER_DEFAULT_FORK
-	echo $MINER_FORK
-}
-
-
-function miner_ver() {
-	local MINER_VER=$XMRIG_NEW_VER
-	local MINER_FORK=`miner_fork`
-	local fork=${MINER_FORK^^} #uppercase MINER_FORK
-	[[ -z $MINER_VER ]] && eval "MINER_VER=\$MINER_LATEST_VER_${fork//-/_}" #char replace
-	echo $MINER_VER
-}
-
-
 function miner_config_echo() {
-	local MINER_FORK=`miner_fork`
-	local MINER_VER=`miner_ver`
-	miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_FORK/$MINER_VER/config.json"
+	miner_echo_config_file "/hive/miners/custom/$MINER_NAME/config.json"
 }
 
 function miner_config_gen() {
-	local MINER_CONFIG="$MINER_DIR/$MINER_FORK/$MINER_VER/config.json"
+	local MINER_CONFIG="/hive/miners/custom/$MINER_NAME/config.json"
 	mkfile_from_symlink $MINER_CONFIG
 
-	conf=`cat $MINER_DIR/$MINER_FORK/$MINER_VER/config_global.json | envsubst`
+	conf=`cat /hive/miners/custom/$MINER_NAME/config_global.json | envsubst`
 	userconf='{}'
-	local ver=`miner_ver`
-	#local fork=`miner_fork`
+
 	#merge user config options into main config
 	if [[ ! -z $XMRIG_NEW_USER_CONFIG ]]; then
 		while read -r line; do
@@ -74,14 +55,14 @@ function miner_config_gen() {
 		#merge GPU settings into main config
 		if [[ -z $XMRIG_NEW_CUDA_CONFIG || $XMRIG_NEW_CUDA_CONFIG == '[]' || $XMRIG_NEW_CUDA_CONFIG == 'null' ]]; then
 			echo -e "${YELLOW}XMRIG_NEW_CUDA_CONFIG is empty, useing autoconfig${NOCOLOR}"
-			local cuda='{"cuda": {"loader": "'$MINER_DIR/$MINER_FORK/$MINER_VER/libxmrig-cuda.so'"}}'
+			local cuda='{"cuda": {"loader": "'/hive/miners/custom/$MINER_NAME/libxmrig-cuda.so'"}}'
 			cuda=`jq --null-input --argjson cuda "$cuda" '$cuda'`
 			conf=$(jq -s '.[0] * .[1]' <<< "$conf $cuda")
 		else
 			local cuda="{$XMRIG_NEW_CUDA_CONFIG}"
 			cuda=`jq --null-input --argjson cuda "$cuda" '$cuda'`
 			conf=$(jq -s '.[0] * .[1]' <<< "$conf $cuda")
-			local cuda='{"cuda": {"loader": "'$MINER_DIR/$MINER_FORK/$MINER_VER/libxmrig-cuda.so'"}}'
+			local cuda='{"cuda": {"loader": "'/hive/miners/custom/$MINER_NAME/libxmrig-cuda.so'"}}'
 			cuda=`jq --null-input --argjson cuda "$cuda" '$cuda'`
 			conf=$(jq -s '.[0] * .[1]' <<< "$conf $cuda")
 		fi
